@@ -1942,10 +1942,11 @@
         </ul>
       </div>
 
-      <div id="sticked">
+      <div id="sticked" class="sticked">
         <button id="newMapButton" data-tip="Generate a new map based on options. Shortcut: F2">New Map</button>
         <button id="saveButton" data-tip="Select format to save map">Save</button>
         <button id="loadButton" data-tip="Load fully functional map in a .map format">Load</button>
+        <button id="cloudButton" data-tip="Get access to cloud storage">Cloud</button> <!-- ADDED BY OLEG -->
         <button id="zoomReset" data-tip="Reset map zoom. Shortcut: 0">Reset Zoom</button>
       </div>
 
@@ -3665,6 +3666,36 @@
       </div>
     </div>
 
+    <!-- ADDED BY OLEG -->
+    <div id="cloudMenu" class="cloudMenu" style="display: none">
+      <div>
+        <label for="mapsSorting">Sort by:</label>
+        <select id="mapsSorting" onchange="showCloudMenu()">
+          <option value="updated">Update date</option>
+          <option value="filename">Filename</option>
+        </select>
+        <a onclick="changeSortOrder()" data-tip="Change sorting order">&uarr;&darr;</a>
+        <div>
+          <table class="cloudMapsData" id="cloudMapsData" style="width:100%"></table>
+        </div>
+        <div class="cloudPagination" id="cloudPagination"></div>
+        <div class="cloudBottomButtons">
+          <button onclick="checkAuthorization(checkRewriting)" data-tip="Quick save of the fully-functional map to cloud">Quick save</button>
+          <button onclick="checkAuthorization(showSaveAsPane)" data-tip="Save fully-functional map to cloud with specific name">Save as</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADDED BY OLEG -->
+    <div id="selectLogin" style="display: none" class="dialog">
+      <div>
+        <button id="google" data-tip="Login with Google">Google</button>
+        <button id="facebook" data-tip="Login with Facebook">Facebook</button>
+        <button id="github" data-tip="Login with GitHub">GitHub</button>
+      </div>
+      <p style="font-style: italic">You need to authorize to get access to Azgaar FMG cloud storage</p>
+    </div>
+    
     <div id="alert" style="display: none" class="dialog">
       <p id="alertMessage">Warning!</p>
     </div>
@@ -3722,6 +3753,7 @@
   <script src="modules/ui/layers.js"></script>
 
   <script defer src="modules/ui/general.js"></script>
+  <script defer src="modules/cloud-storage.js"></script> <!-- ADDED BY OLEG -->
   <script defer src="modules/ui/options.js"></script>
   <script defer src="modules/ui/style.js"></script>
   <script defer src="modules/ui/measurers.js"></script>

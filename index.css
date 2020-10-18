@@ -532,11 +532,19 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 	padding-left: 2.5px;
 }
 
+/* ADDED BY OLEG */
+#sticked {
+	width: 90%;
+}
+
 #sticked button {
 	background-color: #997c8900;
+	float: left; /* ADDED BY OLEG */
+	position: relative; /* ADDED BY OLEG */
+	left: 15px; /* ADDED BY OLEG */
 	padding: 0;
 	margin-bottom: 2px;
-	width: 22%;
+	width: 20%; /* CHANGED BY OLEG FROM 22% FOR 5 BUTTONS */
 	font-size: 1em;
 	border: 0;
 	font-weight: bold;
@@ -544,6 +552,78 @@ input[type="color"]::-webkit-color-swatch-wrapper {
 
 #sticked button:hover {
 	color: white;
+}
+
+/* ADDED BY OLEG */
+.cloudBottomButtons {
+	position: absolute;
+	bottom: 0;
+	left: 10px;
+	display: inline-block;
+}
+
+/* ADDED BY OLEG */
+.cloudPagination {
+	position: absolute;
+	bottom: 25px;
+	left: 5px;
+	display: inline-block;
+}
+
+/* ADDED BY OLEG */
+.cloudPagination a {
+	color: black;
+	float: left;
+	padding: 4px 8px;
+	text-decoration: none;
+}
+
+/* ADDED BY OLEG */
+.cloudPagination a.active {
+	background-color: #666666;
+	color: white;
+}
+
+/* ADDED BY OLEG */
+.cloudPagination a.disabled {
+	pointer-events: none;
+	cursor: default;
+}
+
+/* ADDED BY OLEG */
+.cloudPagination a:hover:not(.active) {
+	background-color: #ddd;
+}
+
+/* ADDED BY OLEG */
+.cloudMapsData a:link {
+	color: #0000ff;
+}
+
+/* ADDED BY OLEG */
+.cloudMapsData a:hover {
+	color: #ff0000;
+}
+  
+/* ADDED BY OLEG */
+.cloudMapsData a:visited {
+	color: #ff00ff;
+}
+
+/* ADDED BY OLEG */
+#selectLogin button {
+	background-color: #997c8900;
+	padding-left: 15px;
+	margin-bottom: 2px;
+	width: 22%;
+	font-size: 1em;
+	border: 0;
+	font-weight: bold;
+}
+
+/* ADDED BY OLEG */
+#selectLogin button:hover {
+	color: red;
 }
 
 #exitCustomization {

@@ -1,4 +1,4 @@
-// UI module to control the options (preferences)
+﻿// UI module to control the options (preferences)
 "use strict";
 
 $("#optionsContainer").draggable({handle: ".drag-trigger", snap: "svg", snapMode: "both"});
@@ -432,6 +432,7 @@ document.getElementById("sticked").addEventListener("click", function(event) {
   if (id === "newMapButton") regeneratePrompt();
   else if (id === "saveButton") showSavePane();
   else if (id === "loadButton") showLoadPane();
+  else if (id === "cloudButton") checkAuthorization(showCloudMenu); // ADDED BY OLEG	
   else if (id === "zoomReset") resetZoom(1000);
 });
 

@@ -1,4 +1,4 @@
-// Fantasy Map Generator main script
+﻿// Fantasy Map Generator main script
 // Azgaar (azgaar.fmg@yandex.by). Minsk, 2017-2019
 // https://github.com/Azgaar/Fantasy-Map-Generator
 // MIT License
@@ -182,13 +182,14 @@ void function checkLoadParameters() {
   generateMapOnLoad();
 }()
 
-function loadMapFromURL(maplink, random) {
+// CHANGED BY OLEG
+function loadMapFromURL(maplink, headers, random) { // headers ADDED BY OLEG
   const URL = decodeURIComponent(maplink);
 
-  fetch(URL, {method: 'GET', mode: 'cors'})
+  fetch(URL, {method: 'GET', headers,  mode: 'cors', credentials: "include"}) // headers ADDED BY OLEG
     .then(response => {
       if(response.ok) return response.blob();
-      throw new Error("Cannot load map from URL");
+      throw new Error("Cannot load map from URL" + data.message); // data.message ADDED BY OLEG
     }).then(blob => uploadMap(blob))
     .catch(error => {
       showUploadErrorMessage(error.message, URL, random);
