@@ -1,6 +1,8 @@
 // UI module to save and load .map to cloud storage
 "use strict";
 
+const CLOUD_BASE = "https://localhost:8443";
+
 const cloudSession = (function() {
     let currentSeed;
     let currentFilename;
@@ -42,7 +44,7 @@ function checkAuthorization(callback) {
 
     // Authorized user reloads page  
     else if (!callback && retrievedUser !== null) {
-        fetch("http://localhost:8080/user-data", {method: "GET", mode: "cors", credentials: "include"})
+        fetch(CLOUD_BASE + "/user-data", {method: "GET", mode: "cors", credentials: "include"})
         .then(function (response) {
             cloudSession.setCsrfToken(response.headers.get("X-XSRF-TOKEN"));
         });
@@ -66,13 +68,13 @@ async function login(callback) {
 
     const url = await selectLogin();
     const loginPopup = window.open("", "loginPopup", "height=600,width=450");
-    fetch("http://localhost:8080/fmg-login", {method: "GET", mode: "cors", credentials: "include"})
+    fetch(CLOUD_BASE + "/fmg-login", {method: "GET", mode: "cors", credentials: "include"})
     .then(function() {
-        loginPopup.location.href = "http://localhost:8080" + url;
+        loginPopup.location.href = CLOUD_BASE + url;
         if (window.focus) loginPopup.focus();
         const timer = setInterval(function() {
             if (loginPopup.closed) {
-                fetch("http://localhost:8080/user-data", {method: "GET", mode: "cors", credentials: "include"})
+                fetch(CLOUD_BASE + "/user-data", {method: "GET", mode: "cors", credentials: "include"})
                 .then(function (response) {
                     cloudSession.setCsrfToken(response.headers.get("X-XSRF-TOKEN"));                   
                     
@@ -130,7 +132,7 @@ function showCloudMenu(page = 0) {
             }
         });
 
-        fetch(`http://localhost:8080/maps?page=${page}&size=${pageSize}&sort=${sortBy},${sortOrder}`, {method: "GET", mode: "cors", credentials: "include"})
+        fetch(CLOUD_BASE + `/maps?page=${page}&size=${pageSize}&sort=${sortBy},${sortOrder}`, {method: "GET", mode: "cors", credentials: "include"})
         .then(function (response) {return response.json();})
         .then(function (data) {
             if (data.content.length === 0) mapData = "<h3>You have no maps in cloud storage yet</h3>";
@@ -197,7 +199,7 @@ function showPagination(totalPages, page) {
 
 // Download .map from cloud
 function downloadCloudMap(cloudMapFilename) {
-    const downloadLink = "http://localhost:8080/download/" + cloudMapFilename;
+    const downloadLink = CLOUD_BASE + "/download/" + cloudMapFilename;
     const headers = new Headers({
         "X-XSRF-TOKEN": cloudSession.getCsrfToken(),
         "Accept": "application/json",
@@ -225,7 +227,7 @@ function checkRewriting(newFilename) {
 
     const headers = new Headers({"X-XSRF-TOKEN": cloudSession.getCsrfToken()});
 
-    fetch("http://localhost:8080/maps?filename=" + cloudSession.getCurrentFilename(), {method: "Get", headers, mode: "cors", credentials: "include"})
+    fetch(CLOUD_BASE + "/maps?filename=" + cloudSession.getCurrentFilename(), {method: "Get", headers, mode: "cors", credentials: "include"})
     .then(function (response) {
         response.json().then(function (existedMap) {
             console.log(existedMap.content.length);
@@ -257,7 +259,7 @@ async function s3Upload() {
                     "version": version})], 
                     {type: "application/json"}));
 
-    fetch("http://localhost:8080/upload", {method: "POST", headers, body: formData, mode: "cors", credentials: "include"})
+    fetch(CLOUD_BASE + "/upload", {method: "POST", headers, body: formData, mode: "cors", credentials: "include"})
     .then(function (response) {
         response.json().then(function (uploadedMap) {
             if (response.status !== 201) {
@@ -386,7 +388,7 @@ function deleteCloudMap(cloudMap) {
 function logout() {
     const headers = new Headers({"X-XSRF-TOKEN": cloudSession.getCsrfToken()});
     if (JSON.parse(localStorage.getItem("fmgUser")) !== null) localStorage.removeItem("fmgUser");
-    fetch("http://localhost:8080/logout", {method: "POST", headers, mode: "cors", credentials: "include"})
+    fetch(CLOUD_BASE + "/logout", {method: "POST", headers, mode: "cors", credentials: "include"})
     .then(function (response) {
         if (response.ok || response.status === 401) {
             $("#cloudMenu").dialog("close");
