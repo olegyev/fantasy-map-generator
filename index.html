@@ -3667,22 +3667,12 @@
     </div>
 
     <!-- ADDED BY OLEG -->
-    <div id="cloudMenu" class="cloudMenu" style="display: none">
+    <div id="cloudMenu" style="display: none" class="dialog">
       <div>
-        <label for="mapsSorting">Sort by:</label>
-        <select id="mapsSorting" onchange="showCloudMenu()">
-          <option value="updated">Update date</option>
-          <option value="filename">Filename</option>
-        </select>
-        <a onclick="changeSortOrder()" data-tip="Change sorting order">&uarr;&darr;</a>
-        <div>
-          <table class="cloudMapsData" id="cloudMapsData" style="width:100%"></table>
-        </div>
+        <table class="cloudMapsData" id="cloudMapsData" style="width: 100%"></table>
+      </div>
+      <div class="cloudPaginationContainer"> 
         <div class="cloudPagination" id="cloudPagination"></div>
-        <div class="cloudBottomButtons">
-          <button onclick="checkAuthorization(checkRewriting)" data-tip="Quick save of the fully-functional map to cloud">Quick save</button>
-          <button onclick="checkAuthorization(showSaveAsPane)" data-tip="Save fully-functional map to cloud with specific name">Save as</button>
-        </div>
       </div>
     </div>
 

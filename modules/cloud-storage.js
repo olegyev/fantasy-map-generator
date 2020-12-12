@@ -3,7 +3,7 @@
 
 const CLOUD_BASE = "https://localhost:8443";
 
-const cloudSession = (function() {
+const cloudSession = (function () {
     let currentSeed;
     let currentFilename;
     let lastSuccessFilename;
@@ -22,14 +22,21 @@ const cloudSession = (function() {
     };
 })();
 
-const cloudPagination = (function() {
+const cloudPagination = (function () {
+    let sortingField = "updated";
     let sortingOrder = false;
+    let sortingIcon = "";
+    
     return {
+        getSortingField: () => sortingField,
+        setSortingField: newSortingField => sortingField = newSortingField,
         getSortingOrder: () => sortingOrder,
         setSortingOrder: newSortingOrder => {
             if (typeof newSortingOrder !== "boolean") throw "Sorting order variable must be boolean!";
             sortingOrder = newSortingOrder;
-        }
+        },
+        getSortingIcon: () => sortingIcon,
+        setSortingIcon: newSortingIcon => sortingIcon = newSortingIcon
     };
 })();
 
@@ -63,16 +70,16 @@ async function login(callback) {
 
     $("#selectLogin").dialog({title: "Login with", resizable: false, width: "27em", 
       position: {my: "center", at: "center", of: "svg"},
-      buttons: {Close: function() {$(this).dialog("close");}}
+      buttons: {Close: function () {$(this).dialog("close");}}
     });
 
     const url = await selectLogin();
     const loginPopup = window.open("", "loginPopup", "height=600,width=450");
     fetch(CLOUD_BASE + "/fmg-login", {method: "GET", mode: "cors", credentials: "include"})
-    .then(function() {
+    .then(function () {
         loginPopup.location.href = CLOUD_BASE + url;
         if (window.focus) loginPopup.focus();
-        const timer = setInterval(function() {
+        const timer = setInterval(function () {
             if (loginPopup.closed) {
                 fetch(CLOUD_BASE + "/user-data", {method: "GET", mode: "cors", credentials: "include"})
                 .then(function (response) {
@@ -112,23 +119,30 @@ function selectLogin() {
 
 // Show cloud menu
 function showCloudMenu(page = 0) {
-    const pageSize = 5;
-    const sortBy = document.getElementById("mapsSorting").value;
+    const pageSize = 3;
+    const sortBy = cloudPagination.getSortingField(); // document.getElementById("mapsSorting").value;
+    const dateSortIcon = sortBy === "updated" ? cloudPagination.getSortingIcon() : "";
+    const filenameSortIcon = sortBy === "updated" ? "" : cloudPagination.getSortingIcon();
+    const sortOrder = cloudPagination.getSortingOrder() ? "asc" : "desc";
     const timeZoneOffset = -(new Date().getTimezoneOffset());
     let mapData = "";
-    let sortOrder = cloudPagination.getSortingOrder() ? "asc" : "desc";
 
     // Timeout is set to retrieve user from localStorage since the latter is asynchronous
-    setTimeout(function() {
-        const retrievedUser = JSON.parse(localStorage.getItem("fmgUser"))
+    setTimeout(function () {
+        const retrievedUser = JSON.parse(localStorage.getItem("fmgUser"));
         $("#cloudMenu").dialog({
-            title: `${retrievedUser.name}'s cloud storage`,
+            title: `${retrievedUser.name}`,
             resizable: false,
-            width: 400,
-            height: 265,
+            width: "auto",
+            // height: "auto",
             buttons: {
-                Logout: function() {logout();},
-                Close: function() {$(this).dialog("close");}
+                "Quick save": function () {checkAuthorization(checkRewriting);},
+                "Save as": function () {checkAuthorization(showSaveAsPane)},
+                Logout: function () {logout();},
+                Close: function () {$(this).dialog("close");}
+            },
+            create: function (event, ui) {
+                $(this).css("minWidth", "500px");
             }
         });
 
@@ -139,6 +153,12 @@ function showCloudMenu(page = 0) {
             else {
                 if (data.page.totalPages > 1) showPagination(data.page.totalPages, page);
                 else document.getElementById("cloudPagination").innerHTML = "";
+                mapData += "<thead id='cloudMapsHeader' class='header'>" +
+                           "<tr>" +
+                           "<td id='cloudFilenameSort' data-tip='Click to sort by filename' class='sortable " + filenameSortIcon + "' onclick='changeSortField(" + '"filename"' + ")'>Filename&nbsp;</td>" +
+                           "<td id='cloudDateSort' data-tip='Click to sort by date' class='sortable " + dateSortIcon + "' onclick='changeSortField(" + '"updated"' + ")'>Date&nbsp;</td>" +
+                           "</tr>" +
+                           "</thead>";
                 data.content.forEach(map => mapData += "<tr>" + 
                                                        "<td><a href='#' data-tip='Click to download map to the FMG' onclick='downloadCloudMap(\"" + map.filename + "\")'>" + map.filename + "</a></td>" +
                                                        "<td>" + new Date(Date.parse(map.updated) + timeZoneOffset * 60 * 1000).customFormat("#YYYY#-#MM#-#DD# #hhhh#:#mm#:#ss#") + "</td>" +
@@ -151,9 +171,13 @@ function showCloudMenu(page = 0) {
     }, 50);
 }
 
-// Change sorting order
-function changeSortOrder() {
-    cloudPagination.setSortingOrder(!cloudPagination.getSortingOrder());
+// Change sorting field
+function changeSortField(sortBy) {
+    cloudPagination.setSortingField(sortBy);
+    const order = cloudPagination.getSortingOrder();
+    const sortingIcon = order ? "icon-sort-name-down" : "icon-sort-name-up";
+    cloudPagination.setSortingIcon(sortingIcon);
+    cloudPagination.setSortingOrder(!order);
     showCloudMenu();
 }
 
@@ -210,11 +234,11 @@ function downloadCloudMap(cloudMapFilename) {
     $("#alert").dialog({title: "Download map", resizable: false, width: "27em", 
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
-          Yes: function() {
+          Yes: function () {
             loadMapFromURL(downloadLink, headers, false);
             $(this).dialog("close");
           },
-          No: function() {$(this).dialog("close");}
+          No: function () {$(this).dialog("close");}
     }});
 }
 
@@ -236,8 +260,8 @@ function checkRewriting(newFilename) {
                 $("#alert").dialog({title: "Rewrite map", resizable: false, width: "27em", 
                   position: {my: "center", at: "center", of: "svg"},
                   buttons: {
-                      Yes: function() {s3Upload();},
-                      No: function() {$(this).dialog("close");}
+                      Yes: function () {s3Upload();},
+                      No: function () {$(this).dialog("close");}
                 }});
             } else {
                 s3Upload();
@@ -269,7 +293,7 @@ async function s3Upload() {
                 alertMessage.innerHTML = uploadedMap.message +  `. Your map will be stored as ${cloudSession.getLastSuccessFilename()}.map by next quick save`;
                 $("#alert").dialog({title: "Denied", resizable: false, width: "27em", 
                   position: {my: "center", at: "center", of: "svg"},
-                  buttons: {Close: function() {$(this).dialog("close");}}
+                  buttons: {Close: function () {$(this).dialog("close");}}
                 });
             } else {
                 cloudSession.setNewFilename(uploadedMap.filename);
@@ -280,7 +304,7 @@ async function s3Upload() {
                                           Link to map: <a href=${uploadedMap.downloadLink}>${uploadedMap.downloadLink}</a>`;
                 $("#alert").dialog({title: "Success", resizable: false, width: "27em", 
                   position: {my: "center", at: "center", of: "svg"},
-                  buttons: {Close: function() {$(this).dialog("close"); showCloudMenu();}}
+                  buttons: {Close: function () {$(this).dialog("close"); showCloudMenu();}}
                 });
             }})
             .catch(function (err) {console.log(err); console.timeEnd("saveToCloud");});
@@ -327,7 +351,7 @@ function showSaveAsPane(cloudMap) {
     alertMessage.innerHTML = `Enter a name for your .map file: <input id="cloudMapName" type="text" style="width:24em" placeholder="${placeholder}" />`;
     $("#alert").dialog({resizable: false, title: "Provide a name for a map", width: "27em",
       buttons: {
-          Save: function() {
+          Save: function () {
               const newFilename = cloudMapName.value;
               if (newFilename.length === 0) {
                   tip("Please provide a name for a map", false, "error");
@@ -339,10 +363,10 @@ function showSaveAsPane(cloudMap) {
               if (!cloudMap) {checkRewriting(newFilename);}
               else renameCloudMap(cloudMap, newFilename);
           },
-          Reset: function() {
+          Reset: function () {
               cloudMapName.value = "";
           },
-          Cancel: function() {$(this).dialog("close");}
+          Cancel: function () {$(this).dialog("close");}
     }});
 }
 
@@ -359,7 +383,7 @@ function deleteCloudMap(cloudMap) {
     $("#alert").dialog({title: "Delete map", resizable: false, width: "27em", 
       position: {my: "center", at: "center", of: "svg"},
       buttons: {
-          Yes: function() {
+          Yes: function () {
             fetch(deleteLink, {method: "DELETE", headers, mode: "cors", credentials: "include"})
             .then(function (response) {
                 if (!response.ok) {
@@ -368,19 +392,19 @@ function deleteCloudMap(cloudMap) {
                         alertMessage.innerHTML = "Something get wrong while deleting a map. Please try again later!";
                         $("#alert").dialog({title: "Error", resizable: false, width: "27em", 
                           position: {my: "center", at: "center", of: "svg"},
-                          buttons: {Close: function() {$(this).dialog("close");}
+                          buttons: {Close: function () {$(this).dialog("close");}
                         }});
                     });
                 } else {
                     alertMessage.innerHTML = `${cloudMap.filename} deleted from the cloud successfully`;
                     $("#alert").dialog({title: "Success", resizable: false, width: "27em", 
                       position: {my: "center", at: "center", of: "svg"},
-                      buttons: {Ok: function() {$(this).dialog("close"); showCloudMenu();}
+                      buttons: {Ok: function () {$(this).dialog("close"); showCloudMenu();}
                     }});
                 }
             });
           },
-          No: function() {$(this).dialog("close");}
+          No: function () {$(this).dialog("close");}
     }});
 }
 
@@ -398,7 +422,7 @@ function logout() {
                 alertMessage.innerHTML = "Something get wrong while logout. Please try again later!";
                 $("#alert").dialog({title: "Error", resizable: false, width: "27em", 
                   position: {my: "center", at: "center", of: "svg"},
-                  buttons: {Close: function() {$(this).dialog("close");}
+                  buttons: {Close: function () {$(this).dialog("close");}
                 }});
             });
         }})
