@@ -120,9 +120,9 @@ function selectLogin() {
 // Show cloud menu
 function showCloudMenu(page = 0) {
     const pageSize = 3;
-    const sortBy = cloudPagination.getSortingField(); // document.getElementById("mapsSorting").value;
+    const sortBy = cloudPagination.getSortingField();
+    const filenameSortIcon = sortBy === "filename" ? cloudPagination.getSortingIcon() : "";
     const dateSortIcon = sortBy === "updated" ? cloudPagination.getSortingIcon() : "";
-    const filenameSortIcon = sortBy === "updated" ? "" : cloudPagination.getSortingIcon();
     const sortOrder = cloudPagination.getSortingOrder() ? "asc" : "desc";
     const timeZoneOffset = -(new Date().getTimezoneOffset());
     let mapData = "";
@@ -173,9 +173,11 @@ function showCloudMenu(page = 0) {
 
 // Change sorting field
 function changeSortField(sortBy) {
-    cloudPagination.setSortingField(sortBy);
     const order = cloudPagination.getSortingOrder();
-    const sortingIcon = order ? "icon-sort-name-down" : "icon-sort-name-up";
+    let sortingIcon = "icon-sort";
+    sortingIcon += sortBy === "updated" ?  "-number" : "-name";
+    sortingIcon += order ?  "-down" : "-up";
+    cloudPagination.setSortingField(sortBy);
     cloudPagination.setSortingIcon(sortingIcon);
     cloudPagination.setSortingOrder(!order);
     showCloudMenu();
