@@ -232,6 +232,7 @@
 .icon-network-wired:before {content:'\f6ff';} /* '' */
 .icon-temperature-high:before {content:'\f769';} /* '' */
 .icon-temperature-low:before {content:'\f76b';} /* '' */
+.icon-copy:before {content:'\f0c5';}
 
 /* Amended FA icons */
 .icon-sort-name-up:after {font-size:.9em;content:'\f15d';}

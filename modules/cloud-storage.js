@@ -1,6 +1,7 @@
 // UI module to save and load .map to cloud storage
 "use strict";
 
+const FMG_BASE = "https://azgaar.github.io/Fantasy-Map-Generator";
 const CLOUD_BASE = "https://localhost:8443";
 
 const cloudSession = (function () {
@@ -164,6 +165,7 @@ function showCloudMenu(page = 0) {
                                                        "<td>" + new Date(Date.parse(map.updated) + timeZoneOffset * 60 * 1000).customFormat("#YYYY#-#MM#-#DD# #hhhh#:#mm#:#ss#") + "</td>" +
                                                        "<td><button onclick='showSaveAsPane(" + JSON.stringify(map) + ")'>Rename</button></td>" + 
                                                        "<td><button onclick='deleteCloudMap(" + JSON.stringify(map) + ")'>Delete</button></td>" +
+                                                       "<td><i class='icon-copy' style='font-size:18px' data-tip='Copy share link' onclick='generateShareLink(\"" + map.filename + "\")'></i></td>" +
                                                        "</tr>");
             }
             document.getElementById("cloudMapsData").innerHTML = mapData;
@@ -181,6 +183,29 @@ function changeSortField(sortBy) {
     cloudPagination.setSortingIcon(sortingIcon);
     cloudPagination.setSortingOrder(!order);
     showCloudMenu();
+}
+
+// Generate share link
+function generateShareLink(filename) {
+    const baseUrl = FMG_BASE + "?maplink=";
+
+    fetch(CLOUD_BASE + `/getShareLink/${filename}`, {method: "GET", mode: "cors", credentials: "include"})
+    .then(function (response) {return response.text();})
+    .then(function (data) {
+        const shareLink = data;
+
+        const el = document.createElement("textarea");
+        el.value = baseUrl + shareLink;
+        el.setAttribute("readonly", "");
+        el.style.position = "absolute";
+        el.style.left = "-9999px";
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+
+        tip("Link copied to clipboard")
+    });
 }
 
 // Show pagination if necessary
