@@ -135,7 +135,6 @@ function showCloudMenu(page = 0) {
             title: `${retrievedUser.name}`,
             resizable: false,
             width: "auto",
-            // height: "auto",
             buttons: {
                 "Quick save": function () {checkAuthorization(checkRewriting);},
                 "Save as": function () {checkAuthorization(showSaveAsPane)},
@@ -162,7 +161,7 @@ function showCloudMenu(page = 0) {
                            "</thead>";
                 data.content.forEach(map => mapData += "<tr>" + 
                                                        "<td><a href='#' data-tip='Click to download map to the FMG' onclick='downloadCloudMap(\"" + map.filename + "\")'>" + map.filename + "</a></td>" +
-                                                       "<td>" + new Date(Date.parse(map.updated) + timeZoneOffset * 60 * 1000).customFormat("#YYYY#-#MM#-#DD# #hhhh#:#mm#:#ss#") + "</td>" +
+                                                       "<td>" + new Date(Date.parse(map.updated) + timeZoneOffset * 60 * 1000).toLocaleString("es-CL") + "</td>" +
                                                        "<td><button onclick='showSaveAsPane(" + JSON.stringify(map) + ")'>Rename</button></td>" + 
                                                        "<td><button onclick='deleteCloudMap(" + JSON.stringify(map) + ")'>Delete</button></td>" +
                                                        "<td><i class='icon-copy' style='font-size:18px' data-tip='Copy share link' onclick='generateShareLink(\"" + map.filename + "\")'></i></td>" +
@@ -204,7 +203,7 @@ function generateShareLink(filename) {
         document.execCommand("copy");
         document.body.removeChild(el);
 
-        tip("Link copied to clipboard")
+        tip("Link copied to clipboard");
     });
 }
 
@@ -455,25 +454,3 @@ function logout() {
         }})
         .catch(function (err) {console.log(err);});
 }
-
-//*** This code is copyright 2002-2016 by Gavin Kistner, !@phrogz.net
-//*** It is covered under the license viewable at http://phrogz.net/JS/_ReuseLicense.txt
-Date.prototype.customFormat = function(formatString){
-    var YYYY,YY,MMMM,MMM,MM,M,DDDD,DDD,DD,D,hhhh,hhh,hh,h,mm,m,ss,s,ampm,AMPM,dMod,th;
-    YY = ((YYYY=this.getFullYear())+"").slice(-2);
-    MM = (M=this.getMonth()+1)<10?('0'+M):M;
-    MMM = (MMMM=["January","February","March","April","May","June","July","August","September","October","November","December"][M-1]).substring(0,3);
-    DD = (D=this.getDate())<10?('0'+D):D;
-    DDD = (DDDD=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][this.getDay()]).substring(0,3);
-    th=(D>=10&&D<=20)?'th':((dMod=D%10)==1)?'st':(dMod==2)?'nd':(dMod==3)?'rd':'th';
-    formatString = formatString.replace("#YYYY#",YYYY).replace("#YY#",YY).replace("#MMMM#",MMMM).replace("#MMM#",MMM).replace("#MM#",MM).replace("#M#",M).replace("#DDDD#",DDDD).replace("#DDD#",DDD).replace("#DD#",DD).replace("#D#",D).replace("#th#",th);
-    h=(hhh=this.getHours());
-    if (h==0) h=24;
-    if (h>12) h-=12;
-    hh = h<10?('0'+h):h;
-    hhhh = hhh<10?('0'+hhh):hhh;
-    AMPM=(ampm=hhh<12?'am':'pm').toUpperCase();
-    mm=(m=this.getMinutes())<10?('0'+m):m;
-    ss=(s=this.getSeconds())<10?('0'+s):s;
-    return formatString.replace("#hhhh#",hhhh).replace("#hhh#",hhh).replace("#hh#",hh).replace("#h#",h).replace("#mm#",mm).replace("#m#",m).replace("#ss#",ss).replace("#s#",s).replace("#ampm#",ampm).replace("#AMPM#",AMPM);
-};
