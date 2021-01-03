@@ -128,48 +128,65 @@ function showCloudMenu(page = 0) {
     const timeZoneOffset = -(new Date().getTimezoneOffset());
     let mapData = "";
 
-    // Timeout is set to retrieve user from localStorage since the latter is asynchronous
-    setTimeout(function () {
-        const retrievedUser = JSON.parse(localStorage.getItem("fmgUser"));
-        $("#cloudMenu").dialog({
-            title: `${retrievedUser.name}`,
-            resizable: false,
-            width: "auto",
-            buttons: {
-                "Quick save": function () {checkAuthorization(checkRewriting);},
-                "Save as": function () {checkAuthorization(showSaveAsPane)},
-                Logout: function () {logout();},
-                Close: function () {$(this).dialog("close");}
-            },
-            create: function (event, ui) {
-                $(this).css("minWidth", "500px");
-            }
-        });
+    fetch(CLOUD_BASE + `/maps?page=${page}&size=${pageSize}&sort=${sortBy},${sortOrder}`, {method: "GET", mode: "cors", credentials: "include"})
 
-        fetch(CLOUD_BASE + `/maps?page=${page}&size=${pageSize}&sort=${sortBy},${sortOrder}`, {method: "GET", mode: "cors", credentials: "include"})
-        .then(function (response) {return response.json();})
-        .then(function (data) {
-            if (data.content.length === 0) mapData = "<h3>You have no maps in cloud storage yet</h3>";
-            else {
-                if (data.page.totalPages > 1) showPagination(data.page.totalPages, page);
-                else document.getElementById("cloudPagination").innerHTML = "";
-                mapData += "<thead id='cloudMapsHeader' class='header'>" +
-                           "<tr>" +
-                           "<td id='cloudFilenameSort' data-tip='Click to sort by filename' class='sortable " + filenameSortIcon + "' onclick='changeSortField(" + '"filename"' + ")'>Filename&nbsp;</td>" +
-                           "<td id='cloudDateSort' data-tip='Click to sort by date' class='sortable " + dateSortIcon + "' onclick='changeSortField(" + '"updated"' + ")'>Date&nbsp;</td>" +
-                           "</tr>" +
-                           "</thead>";
-                data.content.forEach(map => mapData += "<tr>" + 
-                                                       "<td><a href='#' data-tip='Click to download map to the FMG' onclick='downloadCloudMap(\"" + map.filename + "\")'>" + map.filename + "</a></td>" +
-                                                       "<td>" + new Date(Date.parse(map.updated) + timeZoneOffset * 60 * 1000).toLocaleString("es-CL") + "</td>" +
-                                                       "<td><button onclick='showSaveAsPane(" + JSON.stringify(map) + ")'>Rename</button></td>" + 
-                                                       "<td><button onclick='deleteCloudMap(" + JSON.stringify(map) + ")'>Delete</button></td>" +
-                                                       "<td><i class='icon-copy' style='font-size:18px' data-tip='Copy share link' onclick='generateShareLink(\"" + map.filename + "\")'></i></td>" +
-                                                       "</tr>");
-            }
-            document.getElementById("cloudMapsData").innerHTML = mapData;
-        });
-    }, 50);
+    .then(function (response) {
+        if (response.status !== 200) { // Session is over, need to relogin
+            if (JSON.parse(localStorage.getItem("fmgUser")) !== null) localStorage.removeItem("fmgUser");
+            login(showCloudMenu);
+            return;
+        } else {
+            openCloudMenuDialog();
+            return response.json();
+        }
+    })
+    
+    .then(function (data) {
+        if (!data) return;
+        if (data.content.length === 0) mapData = "<h3>You have no maps in cloud storage yet</h3>";
+        else {
+            if (data.page.totalPages > 1) showPagination(data.page.totalPages, page);
+            else document.getElementById("cloudPagination").innerHTML = "";
+            mapData += "<thead id='cloudMapsHeader' class='header'>" +
+                       "<tr>" +
+                       "<td id='cloudFilenameSort' data-tip='Click to sort by filename' class='sortable " + filenameSortIcon + "' onclick='changeSortField(" + '"filename"' + ")'>Filename&nbsp;</td>" +
+                       "<td id='cloudDateSort' data-tip='Click to sort by date' class='sortable " + dateSortIcon + "' onclick='changeSortField(" + '"updated"' + ")'>Date&nbsp;</td>" +
+                       "</tr>" +
+                       "</thead>";
+            data.content.forEach(map => mapData += "<tr>" + 
+                                                   "<td><a href='#' data-tip='Click to download map to the FMG' onclick='downloadCloudMap(\"" + map.filename + "\")'>" + map.filename + "</a></td>" +
+                                                   "<td>" + new Date(Date.parse(map.updated) + timeZoneOffset * 60 * 1000).toLocaleString("es-CL") + "</td>" +
+                                                   "<td><button onclick='showSaveAsPane(" + JSON.stringify(map) + ")'>Rename</button></td>" + 
+                                                   "<td><button onclick='deleteCloudMap(" + JSON.stringify(map) + ")'>Delete</button></td>" +
+                                                   "<td><i class='icon-copy' style='font-size:18px' data-tip='Copy share link' onclick='generateShareLink(\"" + map.filename + "\")'></i></td>" +
+                                                   "</tr>");
+        }
+        document.getElementById("cloudMapsData").innerHTML = mapData;
+    });
+}
+
+// Just opens dialog
+function openCloudMenuDialog() {
+    const retrievedUser = JSON.parse(localStorage.getItem("fmgUser"));
+
+    if (!retrievedUser) {
+        retrievedUser = "Unknown User";
+    }
+
+    $("#cloudMenu").dialog({
+        title: `${retrievedUser.name}`,
+        resizable: false,
+        width: "auto",
+        buttons: {
+            "Quick save": function () {checkAuthorization(checkRewriting);},
+            "Save as": function () {checkAuthorization(showSaveAsPane)},
+            Logout: function () {logout();},
+            Close: function () {$(this).dialog("close");}
+        },
+        create: function (event, ui) {
+            $(this).css("minWidth", "500px");
+        }
+    });
 }
 
 // Change sorting field
@@ -445,7 +462,7 @@ function logout() {
         } else {
             response.json().then(function(data) {
                 console.log(data.message);
-                alertMessage.innerHTML = "Something get wrong while logout. Please try again later!";
+                alertMessage.innerHTML = "Something went wrong while logout. Please try again later!";
                 $("#alert").dialog({title: "Error", resizable: false, width: "27em", 
                   position: {my: "center", at: "center", of: "svg"},
                   buttons: {Close: function () {$(this).dialog("close");}
