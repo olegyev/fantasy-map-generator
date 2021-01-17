@@ -279,6 +279,8 @@ function downloadCloudMap(cloudMapFilename) {
       buttons: {
           Yes: function () {
             loadMapFromURL(downloadLink, headers, false);
+            cloudSession.setNewFilename(cloudMapFilename);
+            setTimeout(function () {cloudSession.setCurrentSeed()}, 1000);
             $(this).dialog("close");
           },
           No: function () {$(this).dialog("close");}
