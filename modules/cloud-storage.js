@@ -280,7 +280,7 @@ function downloadCloudMap(cloudMapFilename) {
           Yes: function () {
             loadMapFromURL(downloadLink, headers, false);
             cloudSession.setNewFilename(cloudMapFilename);
-            setTimeout(function () {cloudSession.setCurrentSeed()}, 1000);
+            setTimeout(function () {cloudSession.setCurrentSeed()}, 2000);
             $(this).dialog("close");
           },
           No: function () {$(this).dialog("close");}
@@ -299,7 +299,6 @@ function checkRewriting(newFilename) {
     fetch(CLOUD_BASE + "/maps?filename=" + cloudSession.getCurrentFilename(), {method: "Get", headers, mode: "cors", credentials: "include"})
     .then(function (response) {
         response.json().then(function (existedMap) {
-            console.log(existedMap.content.length);
             if (existedMap.content.length > 0) {
                 alertMessage.innerHTML = `Are you sure you want to rewrite ${cloudSession.getCurrentFilename()}?`;
                 $("#alert").dialog({title: "Rewrite map", resizable: false, width: "27em", 
@@ -333,9 +332,9 @@ async function s3Upload() {
         response.json().then(function (uploadedMap) {
             if (response.status !== 201) {
                 console.log(uploadedMap.message);
-                cloudSession.setNewFilename(cloudSession.getLastSuccessFilename());
+                if (cloudSession.getLastSuccessFilename()) cloudSession.setNewFilename(cloudSession.getLastSuccessFilename());
                 console.timeEnd("saveToCloud");
-                alertMessage.innerHTML = uploadedMap.message +  `. Your map will be stored as ${cloudSession.getLastSuccessFilename()}.map by next quick save`;
+                alertMessage.innerHTML = uploadedMap.message;
                 $("#alert").dialog({title: "Denied", resizable: false, width: "27em", 
                   position: {my: "center", at: "center", of: "svg"},
                   buttons: {Close: function () {$(this).dialog("close");}}
@@ -344,9 +343,9 @@ async function s3Upload() {
                 cloudSession.setNewFilename(uploadedMap.filename);
                 cloudSession.setLastSuccessFilename();
                 console.timeEnd("saveToCloud");
-                alertMessage.innerHTML = `${cloudSession.getCurrentFilename()}.map is saved to cloud successfully.
-                                          You have ${uploadedMap.freeSlots} more memory slots for this map. </br>
-                                          Link to map: <a href=${uploadedMap.downloadLink}>${uploadedMap.downloadLink}</a>`;
+                alertMessage.innerHTML = `${cloudSession.getCurrentFilename()}.map is saved to cloud successfully. </br>
+                                          You have ${uploadedMap.freeSlots} more memory slots. </br>
+                                          Share link: <a href=${uploadedMap.shareLink}>${uploadedMap.shareLink}</a>`;
                 $("#alert").dialog({title: "Success", resizable: false, width: "27em", 
                   position: {my: "center", at: "center", of: "svg"},
                   buttons: {Close: function () {$(this).dialog("close"); showCloudMenu();}}
@@ -358,7 +357,7 @@ async function s3Upload() {
 
 // Rename filename of the .map
 function renameCloudMap(cloudMap, newFilename) {
-    const downloadLink = cloudMap.links[0].href;
+    const mapLink = cloudMap.links[0].href;
     const updatedCloudMap = {
         fileId: cloudMap.fileId,
         filename: newFilename,
@@ -370,7 +369,7 @@ function renameCloudMap(cloudMap, newFilename) {
         "Content-Type": "application/json"
     });
 
-    fetch(downloadLink, {method: "PUT", headers, body: JSON.stringify(updatedCloudMap), mode: "cors", credentials: "include"})
+    fetch(mapLink, {method: "PUT", headers, body: JSON.stringify(updatedCloudMap), mode: "cors", credentials: "include"})
     .then(function (response) {
         if (response.status !== 201) {
             response.json().then(function (data) {
@@ -388,6 +387,19 @@ function renameCloudMap(cloudMap, newFilename) {
 // Show pane to insert a map's name for saving to cloud
 function showSaveAsPane(cloudMap) {
     if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
+
+    if (!cloudMap) {
+        const retrievedUser = JSON.parse(localStorage.getItem("fmgUser"));
+        const numberOfUploadedMaps = $('#cloudMapsData tr').length - 1;
+        if (retrievedUser.memorySlotsNum === numberOfUploadedMaps) {
+            alertMessage.innerHTML = "Map cannot be stored. You are out of memory slots.";
+            $("#alert").dialog({title: "Denied", resizable: false, width: "27em", 
+                  position: {my: "center", at: "center", of: "svg"},
+                  buttons: {Close: function () {$(this).dialog("close");}}
+            });
+            return;
+        }
+    }
 
     const pattern = /^[-_A-Za-z0-9 ]+$/;
     let placeholder;
