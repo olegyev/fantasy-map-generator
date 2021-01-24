@@ -9,17 +9,20 @@ const cloudSession = (function () {
     let currentFilename;
     let lastSuccessFilename;
     let csrfToken;
+    let isQuickSave;
 
     return {
         getCurrentSeed: () => currentSeed,
         getCurrentFilename: () => currentFilename,
         getLastSuccessFilename: () => lastSuccessFilename,
         getCsrfToken: () => csrfToken,
+        getIsQuickSave: () => isQuickSave,
         setCurrentSeed: () =>  currentSeed = seed,
         setDefaultFilename: () => currentFilename = mapName.value,
         setNewFilename: newFilename => currentFilename = newFilename,
         setLastSuccessFilename: () => lastSuccessFilename = currentFilename,
-        setCsrfToken: newCsrfToken => csrfToken = newCsrfToken
+        setCsrfToken: newCsrfToken => csrfToken = newCsrfToken,
+        setIsQuickSave: newIsQuickSave =>isQuickSave = newIsQuickSave
     };
 })();
 
@@ -178,8 +181,8 @@ function openCloudMenuDialog() {
         resizable: false,
         width: "auto",
         buttons: {
-            "Quick save": function () {checkAuthorization(checkRewriting);},
-            "Save as": function () {checkAuthorization(showSaveAsPane)},
+            "Quick save": function () {cloudSession.setIsQuickSave(true); checkAuthorization(checkRewriting);},
+            "Save as": function () {cloudSession.setIsQuickSave(false); checkAuthorization(showSaveAsPane)},
             Logout: function () {logout();},
             Close: function () {$(this).dialog("close");}
         },
@@ -320,14 +323,18 @@ async function s3Upload() {
     const headers = new Headers({"X-XSRF-TOKEN": cloudSession.getCsrfToken()});
     const blob = await getMapData();
     const formData = new FormData();
+
     formData.append("file", blob, cloudSession.getCurrentFilename());
     formData.append("map", new Blob([JSON.stringify({
                     "fileId": cloudSession.getCurrentSeed(),
                     "filename": cloudSession.getCurrentFilename(),
-                    "version": version})], 
+                    "version": version})],
                     {type: "application/json"}));
+                    console.log(cloudSession.getCurrentSeed());
+                    console.log(cloudSession.getCurrentFilename());
+                    console.log(version);
 
-    fetch(CLOUD_BASE + "/upload", {method: "POST", headers, body: formData, mode: "cors", credentials: "include"})
+    fetch(CLOUD_BASE + "/upload" + "?isQuickSave=" + cloudSession.getIsQuickSave(), {method: "POST", headers, body: formData, mode: "cors", credentials: "include"})
     .then(function (response) {
         response.json().then(function (uploadedMap) {
             if (response.status !== 201) {
@@ -387,20 +394,6 @@ function renameCloudMap(cloudMap, newFilename) {
 // Show pane to insert a map's name for saving to cloud
 function showSaveAsPane(cloudMap) {
     if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
-
-    if (!cloudMap) {
-        const retrievedUser = JSON.parse(localStorage.getItem("fmgUser"));
-        const numberOfUploadedMaps = $('#cloudMapsData tr').length - 1;
-        if (retrievedUser.memorySlotsNum === numberOfUploadedMaps) {
-            alertMessage.innerHTML = "Map cannot be stored. You are out of memory slots.";
-            $("#alert").dialog({title: "Denied", resizable: false, width: "27em", 
-                  position: {my: "center", at: "center", of: "svg"},
-                  buttons: {Close: function () {$(this).dialog("close");}}
-            });
-            return;
-        }
-    }
-
     const pattern = /^[-_A-Za-z0-9 ]+$/;
     let placeholder;
     if (!cloudMap) placeholder = !cloudSession.getCurrentFilename() || cloudSession.getCurrentSeed() !== seed ? mapName.value : cloudSession.getCurrentFilename();
