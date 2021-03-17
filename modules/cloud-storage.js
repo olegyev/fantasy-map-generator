@@ -22,7 +22,7 @@ const cloudSession = (function () {
         setNewFilename: newFilename => currentFilename = newFilename,
         setLastSuccessFilename: () => lastSuccessFilename = currentFilename,
         setCsrfToken: newCsrfToken => csrfToken = newCsrfToken,
-        setIsQuickSave: newIsQuickSave =>isQuickSave = newIsQuickSave
+        setIsQuickSave: newIsQuickSave => isQuickSave = newIsQuickSave
     };
 })();
 
@@ -330,9 +330,6 @@ async function s3Upload() {
                     "filename": cloudSession.getCurrentFilename(),
                     "version": version})],
                     {type: "application/json"}));
-                    console.log(cloudSession.getCurrentSeed());
-                    console.log(cloudSession.getCurrentFilename());
-                    console.log(version);
 
     fetch(CLOUD_BASE + "/upload" + "?isQuickSave=" + cloudSession.getIsQuickSave(), {method: "POST", headers, body: formData, mode: "cors", credentials: "include"})
     .then(function (response) {
