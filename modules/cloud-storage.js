@@ -150,13 +150,17 @@ function showCloudMenu(page = 0) {
         else {
             if (data.page.totalPages > 1) showPagination(data.page.totalPages, page);
             else document.getElementById("cloudPagination").innerHTML = "";
+            // FINISHED HERE - ADD STORING .PNG ON S3 TOGETHER WITH .MAP + RETRIEVING URL TO SHOW THUMBNAIL
+            const thumbUrl = encodeURIComponent('https://www.w3schools.com/howto/img_forest.jpg');
             mapData += "<thead id='cloudMapsHeader' class='header'>" +
                        "<tr>" +
+                       "<td></td>" +
                        "<td id='cloudFilenameSort' data-tip='Click to sort by filename' class='sortable " + filenameSortIcon + "' onclick='changeSortField(" + '"filename"' + ")'>Filename&nbsp;</td>" +
                        "<td id='cloudDateSort' data-tip='Click to sort by date' class='sortable " + dateSortIcon + "' onclick='changeSortField(" + '"updated"' + ")'>Date&nbsp;</td>" +
                        "</tr>" +
                        "</thead>";
             data.content.forEach(map => mapData += "<tr>" + 
+                                                   "<td><img src='" + decodeURIComponent(thumbUrl) + "' alt='FMG_cloud_thumbnail' class='cloud-thumb' onclick='zoomCloudThumbnail(\"" + thumbUrl + "\")' onmouseout='closeZoomCloudThumbnail()'></td>" +
                                                    "<td><a href='#' data-tip='Click to download map to the FMG' onclick='downloadCloudMap(\"" + map.filename + "\")'>" + map.filename + "</a></td>" +
                                                    "<td>" + new Date(Date.parse(map.updated) + timeZoneOffset * 60 * 1000).toLocaleString("es-CL") + "</td>" +
                                                    "<td><button onclick='showSaveAsPane(" + JSON.stringify(map) + ")'>Rename</button></td>" + 
@@ -474,4 +478,14 @@ function logout() {
             });
         }})
         .catch(function (err) {console.log(err);});
+}
+
+function zoomCloudThumbnail(src) {
+    $(".cloud-thumb-zoom img").attr("src", decodeURIComponent(src));
+    $(".cloud-thumb-zoom").css({"display": "block", "width": "90%", "height": "90%", "position": "absolute", "margin": "3%"});
+}
+
+function closeZoomCloudThumbnail() {
+    $(".cloud-thumb-zoom img").attr("src", "");
+    $(".cloud-thumb-zoom").css({"display": "none"});
 }
