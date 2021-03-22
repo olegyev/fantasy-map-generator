@@ -639,22 +639,6 @@ thead.header > tr > td {
 	width: 150px;
 }
 
-/* ADDED BY OLEG */
-.cloud-thumb:hover {
-	cursor: pointer;
-}
-
-/* ADDED BY OLEG */
-.cloud-thumb-zoom {
-    display: none;
-}
-
-/* ADDED BY OLEG */
-.cloud-thumb-zoom img {
-	width: 100%;
-	height: 100%;
-}
-
 #exitCustomization {
 	right: 10px;
 	bottom: 10px;

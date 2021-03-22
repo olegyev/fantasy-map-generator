@@ -151,8 +151,6 @@ function showCloudMenu(page = 0) {
             else {
                 if (data.page.totalPages > 1) showPagination(data.page.totalPages, page);
                 else document.getElementById("cloudPagination").innerHTML = "";
-                // FINISHED HERE - ADD STORING .PNG ON S3 TOGETHER WITH .MAP + RETRIEVING URL TO SHOW THUMBNAIL
-                const thumbUrl = encodeURIComponent('');
                 mapData += "<thead id='cloudMapsHeader' class='header'>" +
                     "<tr>" +
                     "<td></td>" +
@@ -161,7 +159,7 @@ function showCloudMenu(page = 0) {
                     "</tr>" +
                     "</thead>";
                 data.content.forEach(map => mapData += "<tr>" +
-                    "<td><img src='" + decodeURIComponent(thumbUrl) + "' alt='FMG_cloud_thumbnail' class='cloud-thumb'></td>" +
+                    "<td><img src='" + map.thumbnail + "' alt='FMG_cloud_thumbnail' class='cloud-thumb'></td>" +
                     "<td><a href='#' data-tip='Click to download map to the FMG' onclick='downloadCloudMap(\"" + map.filename + "\")'>" + map.filename + "</a></td>" +
                     "<td>" + new Date(Date.parse(map.updated) + timeZoneOffset * 60 * 1000).toLocaleString("es-CL") + "</td>" +
                     "<td><button onclick='showSaveAsPane(" + JSON.stringify(map) + ")'>Rename</button></td>" +
