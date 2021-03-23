@@ -209,25 +209,26 @@ function changeSortField(sortBy) {
 
 // Generate share link
 function generateShareLink(filename) {
-    const baseUrl = FMG_BASE + "?maplink=";
-
     fetch(CLOUD_BASE + `/getShareLink/${filename}`, { method: "GET", mode: "cors", credentials: "include" })
         .then(function (response) { return response.text(); })
         .then(function (data) {
-            const shareLink = data;
-
-            const el = document.createElement("textarea");
-            el.value = baseUrl + shareLink;
-            el.setAttribute("readonly", "");
-            el.style.position = "absolute";
-            el.style.left = "-9999px";
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand("copy");
-            document.body.removeChild(el);
-
-            tip("Link copied to clipboard");
+            copyShareLink(data);
         });
+}
+
+// Copy share link
+function copyShareLink(link) {
+    const baseUrl = FMG_BASE + "?maplink=";
+    const el = document.createElement("textarea");
+    el.value = baseUrl + link;
+    el.setAttribute("readonly", "");
+    el.style.position = "absolute";
+    el.style.left = "-9999px";
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand("copy");
+    document.body.removeChild(el);
+    tip("Link copied to clipboard");
 }
 
 // Show pagination if necessary
@@ -380,7 +381,7 @@ async function s3Upload() {
                                 console.timeEnd("saveToCloud");
                                 alertMessage.innerHTML = `${cloudSession.getCurrentFilename()}.map is saved to cloud successfully. </br>
                                           You have ${uploadedMap.freeSlots} more memory slots. </br>
-                                          Share link: <a href=${uploadedMap.shareLink}>${uploadedMap.shareLink}</a>`;
+                                          <span class="span-link" onclick='copyShareLink("${uploadedMap.shareLink}")'>Copy share link</span>`;
                                 $("#alert").dialog({
                                     title: "Success", resizable: false, width: "27em",
                                     position: { my: "center", at: "center", of: "svg" },
