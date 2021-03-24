@@ -1068,6 +1068,7 @@ function parseLoadedData(data) {
     console.warn(`TOTAL: ${rn((performance.now()-uploadMap.timeStart)/1000,2)}s`);
     showStatistics();
     console.groupEnd("Loaded Map " + seed);
+    if (cloudSession) cloudSession.setCurrentSeed(); // ADDED BY OLEG
     tip("Map is successfully loaded", true, "success", 7000);
   }
   catch(error) {

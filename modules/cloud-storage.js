@@ -288,7 +288,6 @@ function downloadCloudMap(cloudMapFilename) {
             Yes: function () {
                 loadMapFromURL(downloadLink, headers, false);
                 cloudSession.setNewFilename(cloudMapFilename);
-                setTimeout(function () { cloudSession.setCurrentSeed() }, 2000);
                 $(this).dialog("close");
             },
             No: function () { $(this).dialog("close"); }
@@ -305,7 +304,7 @@ function checkRewriting(newFilename) {
 
     const headers = new Headers({ "X-XSRF-TOKEN": cloudSession.getCsrfToken() });
 
-    fetch(CLOUD_BASE + "/maps?filename=" + cloudSession.getCurrentFilename(), { method: "Get", headers, mode: "cors", credentials: "include" })
+    fetch(CLOUD_BASE + "/maps?filename=" + cloudSession.getCurrentFilename(), { method: "GET", headers, mode: "cors", credentials: "include" })
         .then(function (response) {
             response.json().then(function (existedMap) {
                 if (existedMap.content.length > 0) {
