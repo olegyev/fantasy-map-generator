@@ -525,3 +525,8 @@ function logout() {
         })
         .catch(function (err) { console.log(err); });
 }
+
+// Count "Save .map locally" click
+function countClick() {
+    fetch(CLOUD_BASE + "/count-click", { method: "POST", mode: "cors" });
+}

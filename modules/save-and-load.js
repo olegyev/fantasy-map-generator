@@ -294,6 +294,8 @@ async function saveMap() {
   if (customization) {tip("Map cannot be saved when edit mode is active, please exit the mode and retry", false, "error"); return;}
   closeDialogs("#alert");
 
+  countClick();
+
   const blob = await getMapData();
   const URL = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
