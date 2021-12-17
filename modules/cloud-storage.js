@@ -56,9 +56,9 @@ function checkAuthorization(callback) {
     // Authorized user reloads page  
     else if (!callback && retrievedUser !== null) {
         fetch(CLOUD_BASE + "/user-data", { method: "GET", mode: "cors", credentials: "include" })
-            .then(function (response) {
-                cloudSession.setCsrfToken(response.headers.get("X-XSRF-TOKEN"));
-            });
+        .then(function (response) {
+            cloudSession.setCsrfToken(response.headers.get("X-XSRF-TOKEN"));
+        });
     }
 
     // Unauthorized user clicks on cloud button
@@ -75,45 +75,47 @@ async function login(callback) {
     $("#selectLogin").dialog({
         title: "Login with", resizable: false, width: "27em",
         position: { my: "center", at: "center", of: "svg" },
-        buttons: { Close: function () { $(this).dialog("close"); } }
+        buttons: {
+            Close: function () { $(this).dialog("close"); } 
+        }
     });
 
     const url = await selectLogin();
     const loginPopup = window.open("", "loginPopup", "height=600,width=450");
+
     fetch(CLOUD_BASE + "/fmg-login", { method: "GET", mode: "cors", credentials: "include" })
-        .then(function () {
-            loginPopup.location.href = CLOUD_BASE + url;
-            if (window.focus) loginPopup.focus();
-            const timer = setInterval(function () {
-                if (loginPopup.closed) {
-                    fetch(CLOUD_BASE + "/user-data", { method: "GET", mode: "cors", credentials: "include" })
-                        .then(function (response) {
-                            cloudSession.setCsrfToken(response.headers.get("X-XSRF-TOKEN"));
+    .then(function () {
+        loginPopup.location.href = CLOUD_BASE + url;
+        if (window.focus) loginPopup.focus();
+        const timer = setInterval(function () {
+            if (loginPopup.closed) {
+                fetch(CLOUD_BASE + "/user-data", { method: "GET", mode: "cors", credentials: "include" })
+                .then(function (response) {
+                    cloudSession.setCsrfToken(response.headers.get("X-XSRF-TOKEN"));
 
-                            // User authorized successfully
-                            if (response.ok) {
-                                clearInterval(timer);
-                                $("#selectLogin").dialog("close");
-                                response.json().then(function (user) { localStorage.setItem("fmgUser", JSON.stringify(user)); });
-                                callback();
+                    // User authorized successfully
+                    if (response.ok) {
+                        clearInterval(timer);
+                        $("#selectLogin").dialog("close");
+                        response.json().then(function (user) { localStorage.setItem("fmgUser", JSON.stringify(user)); });
+                        callback();
 
-                                // User decided to close login popup without authorization
-                            } else {
-                                clearInterval(timer);
-                                $("#selectLogin").dialog("close");
-                                tip("Please authorize to get access to the cloud storage", false, "error");
-                                console.log("User did not authorize.");
-                            }
-                        });
-                }
-            }, 500);
-        });
+                    // User decided to close login popup without authorization
+                    } else {
+                        clearInterval(timer);
+                        $("#selectLogin").dialog("close");
+                        tip("Please authorize to get access to the cloud storage", false, "error");
+                        console.log("User did not authorize.");
+                    }
+                });
+            }
+        }, 500);
+    });
 }
 
 // Select a way to login
 function selectLogin() {
-    return new Promise(resolve =>
-        document.getElementById("selectLogin").addEventListener("click", function (event) {
+    return new Promise(resolve => document.getElementById("selectLogin").addEventListener("click", function (event) {
             const id = event.target.id;
             if (id === "google") resolve("/oauth2/authorization/google");
             else if (id === "facebook") resolve("/oauth2/authorization/facebook");
@@ -133,42 +135,41 @@ function showCloudMenu(page = 0) {
     let mapData = "";
 
     fetch(CLOUD_BASE + `/maps?page=${page}&size=${pageSize}&sort=${sortBy},${sortOrder}`, { method: "GET", mode: "cors", credentials: "include" })
+    .then(function (response) {
+        if (response.status !== 200) { // Session is over, need to relogin
+            if (JSON.parse(localStorage.getItem("fmgUser")) !== null) localStorage.removeItem("fmgUser");
+            login(showCloudMenu);
+            return;
+        } else {
+            openCloudMenuDialog();
+            return response.json();
+        }
+    })
 
-        .then(function (response) {
-            if (response.status !== 200) { // Session is over, need to relogin
-                if (JSON.parse(localStorage.getItem("fmgUser")) !== null) localStorage.removeItem("fmgUser");
-                login(showCloudMenu);
-                return;
-            } else {
-                openCloudMenuDialog();
-                return response.json();
-            }
-        })
-
-        .then(function (data) {
-            if (!data) return;
-            if (data.content.length === 0) mapData = "<h3>You have no maps in cloud storage yet</h3>";
-            else {
-                if (data.page.totalPages > 1) showPagination(data.page.totalPages, page);
-                else document.getElementById("cloudPagination").innerHTML = "";
-                mapData += "<thead id='cloudMapsHeader' class='header'>" +
-                    "<tr>" +
-                    "<td></td>" +
-                    "<td id='cloudFilenameSort' data-tip='Click to sort by filename' class='sortable " + filenameSortIcon + "' onclick='changeSortField(" + '"filename"' + ")'>Filename&nbsp;</td>" +
-                    "<td id='cloudDateSort' data-tip='Click to sort by date' class='sortable " + dateSortIcon + "' onclick='changeSortField(" + '"updated"' + ")'>Date&nbsp;</td>" +
-                    "</tr>" +
-                    "</thead>";
-                data.content.forEach(map => mapData += "<tr>" +
-                    "<td><img src='" + map.thumbnail + "' alt='FMG_cloud_thumbnail' class='cloud-thumb'></td>" +
-                    "<td><a href='#' data-tip='Click to download map to the FMG' onclick='downloadCloudMap(\"" + map.filename + "\")'>" + map.filename + "</a></td>" +
-                    "<td>" + new Date(Date.parse(map.updated) + timeZoneOffset * 60 * 1000).toLocaleString("es-CL") + "</td>" +
-                    "<td><button onclick='showSaveAsPane(" + JSON.stringify(map) + ")'>Rename</button></td>" +
-                    "<td><button onclick='deleteCloudMap(" + JSON.stringify(map) + ")'>Delete</button></td>" +
-                    "<td><i class='icon-copy' style='font-size:18px' data-tip='Copy share link' onclick='generateShareLink(\"" + map.filename + "\")'></i></td>" +
-                    "</tr>");
-            }
-            document.getElementById("cloudMapsData").innerHTML = mapData;
-        });
+    .then(function (data) {
+        if (!data) return;
+        if (data.content.length === 0) mapData = "<h3>You have no maps in cloud storage yet</h3>";
+        else {
+            if (data.page.totalPages > 1) showPagination(data.page.totalPages, page);
+            else document.getElementById("cloudPagination").innerHTML = "";
+            mapData += "<thead id='cloudMapsHeader' class='header'>" +
+                "<tr>" +
+                "<td></td>" +
+                "<td id='cloudFilenameSort' data-tip='Click to sort by filename' class='sortable " + filenameSortIcon + "' onclick='changeSortField(" + '"filename"' + ")'>Filename&nbsp;</td>" +
+                "<td id='cloudDateSort' data-tip='Click to sort by date' class='sortable " + dateSortIcon + "' onclick='changeSortField(" + '"updated"' + ")'>Date&nbsp;</td>" +
+                "</tr>" +
+                "</thead>";
+            data.content.forEach(map => mapData += "<tr>" +
+                "<td><img src='" + map.thumbnail + "' alt='FMG_cloud_thumbnail' class='cloud-thumb'></td>" +
+                "<td><a href='#' data-tip='Click to download map to the FMG' onclick='downloadCloudMap(\"" + map.filename + "\")'>" + map.filename + "</a></td>" +
+                "<td>" + new Date(Date.parse(map.updated) + timeZoneOffset * 60 * 1000).toLocaleString("es-CL") + "</td>" +
+                "<td><button onclick='showSaveAsPane(" + JSON.stringify(map) + ")'>Rename</button></td>" +
+                "<td><button onclick='deleteCloudMap(" + JSON.stringify(map) + ")'>Delete</button></td>" +
+                "<td><i class='icon-copy' style='font-size:18px' data-tip='Copy share link' onclick='generateShareLink(\"" + map.filename + "\")'></i></td>" +
+                "</tr>");
+        }
+        document.getElementById("cloudMapsData").innerHTML = mapData;
+    });
 }
 
 // Just opens dialog
@@ -210,10 +211,8 @@ function changeSortField(sortBy) {
 // Generate share link
 function generateShareLink(filename) {
     fetch(CLOUD_BASE + `/getShareLink/${filename}`, { method: "GET", mode: "cors", credentials: "include" })
-        .then(function (response) { return response.text(); })
-        .then(function (data) {
-            copyShareLink(data);
-        });
+    .then(function (response) { return response.text(); })
+    .then(function (data) { copyShareLink(data); });
 }
 
 // Copy share link
@@ -240,8 +239,8 @@ function showPagination(totalPages, page) {
     let pageTag;
     let flag;
 
-    if (page === 0) pageTag = "<a class='disabled'>&laquo;</a>";
-    else pageTag = "<a onclick='showCloudMenu(" + (page - 1) + ")'>&laquo;</a>";
+    if (page === 0) pageTag = "<a class='disabled'>&laquo;</a>"; // «
+    else pageTag = "<a onclick='showCloudMenu(" + (page - 1) + ")'>&laquo;</a>"; // «
 
     if (totalPages <= pageLimit) {
         for (; pageNum <= totalPages; pageNum++) {
@@ -266,8 +265,8 @@ function showPagination(totalPages, page) {
         }
     }
 
-    if (page === totalPages - 1) pageTag += "<a class='disabled'>&raquo;</a>";
-    else pageTag += "<a onclick='showCloudMenu(" + (page + 1) + ")'>&raquo;</a>";
+    if (page === totalPages - 1) pageTag += "<a class='disabled'>&raquo;</a>"; // »
+    else pageTag += "<a onclick='showCloudMenu(" + (page + 1) + ")'>&raquo;</a>"; // »
     document.getElementById("cloudPagination").innerHTML = pageTag;
 }
 
@@ -305,23 +304,23 @@ function checkRewriting(newFilename) {
     const headers = new Headers({ "X-XSRF-TOKEN": cloudSession.getCsrfToken() });
 
     fetch(CLOUD_BASE + "/maps?filename=" + cloudSession.getCurrentFilename(), { method: "GET", headers, mode: "cors", credentials: "include" })
-        .then(function (response) {
-            response.json().then(function (existedMap) {
-                if (existedMap.content.length > 0) {
-                    alertMessage.innerHTML = `Are you sure you want to rewrite ${cloudSession.getCurrentFilename()}?`;
-                    $("#alert").dialog({
-                        title: "Rewrite map", resizable: false, width: "27em",
-                        position: { my: "center", at: "center", of: "svg" },
-                        buttons: {
-                            Yes: function () { s3Upload(); },
-                            No: function () { $(this).dialog("close"); }
-                        }
-                    });
-                } else {
-                    s3Upload();
-                }
-            });
+    .then(function (response) {
+        response.json().then(function (existingMap) {
+            if (existingMap.content.length > 0) {
+                alertMessage.innerHTML = `Are you sure you want to rewrite ${cloudSession.getCurrentFilename()}?`;
+                $("#alert").dialog({
+                    title: "Rewrite map", resizable: false, width: "27em",
+                    position: { my: "center", at: "center", of: "svg" },
+                    buttons: {
+                        Yes: function () { s3Upload(); },
+                        No: function () { $(this).dialog("close"); }
+                    }
+                });
+            } else {
+                s3Upload();
+            }
         });
+    });
 }
 
 // Upload .map to AWS S3
@@ -357,39 +356,41 @@ async function s3Upload() {
                     "filename": cloudSession.getCurrentFilename(),
                     "thumbnail": thumbnail,
                     "version": version
-                })],
-                    { type: "application/json" }));
+                })], { type: "application/json" }));
 
                 // 3. Send request and process response
                 fetch(CLOUD_BASE + "/upload" + "?isQuickSave=" + cloudSession.getIsQuickSave(), { method: "POST", headers, body: formData, mode: "cors", credentials: "include" })
-                    .then(function (response) {
-                        response.json().then(function (uploadedMap) {
-                            if (response.status !== 201) {
-                                console.log(uploadedMap.message);
-                                if (cloudSession.getLastSuccessFilename()) cloudSession.setNewFilename(cloudSession.getLastSuccessFilename());
-                                console.timeEnd("saveToCloud");
-                                alertMessage.innerHTML = uploadedMap.message;
-                                $("#alert").dialog({
-                                    title: "Denied", resizable: false, width: "27em",
-                                    position: { my: "center", at: "center", of: "svg" },
-                                    buttons: { Close: function () { $(this).dialog("close"); } }
-                                });
-                            } else {
-                                cloudSession.setNewFilename(uploadedMap.filename);
-                                cloudSession.setLastSuccessFilename();
-                                console.timeEnd("saveToCloud");
-                                alertMessage.innerHTML = `${cloudSession.getCurrentFilename()}.map is saved to cloud successfully. </br>
-                                          You have ${uploadedMap.freeSlots} more memory slots. </br>
-                                          <span class="span-link" onclick='copyShareLink("${uploadedMap.shareLink}")'>Copy share link</span>`;
-                                $("#alert").dialog({
-                                    title: "Success", resizable: false, width: "27em",
-                                    position: { my: "center", at: "center", of: "svg" },
-                                    buttons: { Close: function () { $(this).dialog("close"); showCloudMenu(); } }
-                                });
-                            }
-                        })
-                            .catch(function (err) { console.log(err); console.timeEnd("saveToCloud"); });
-                    });
+                .then(function (response) {
+                    response.json().then(function (uploadedMap) {
+                        if (response.status !== 201) {
+                            console.log(uploadedMap.message);
+                            if (cloudSession.getLastSuccessFilename()) cloudSession.setNewFilename(cloudSession.getLastSuccessFilename());
+                            console.timeEnd("saveToCloud");
+                            alertMessage.innerHTML = uploadedMap.message;
+                            $("#alert").dialog({
+                                title: "Denied", resizable: false, width: "27em",
+                                position: { my: "center", at: "center", of: "svg" },
+                                buttons: {
+                                    Close: function () { $(this).dialog("close"); }
+                                }
+                            });
+                        } else {
+                            cloudSession.setNewFilename(uploadedMap.filename);
+                            cloudSession.setLastSuccessFilename();
+                            console.timeEnd("saveToCloud");
+                            alertMessage.innerHTML = `${cloudSession.getCurrentFilename()}.map is saved to cloud successfully. </br>
+                                        You have ${uploadedMap.freeSlots} more memory slots. </br>
+                                        <span class="span-link" onclick='copyShareLink("${uploadedMap.shareLink}")'>Copy share link</span>`;
+                            $("#alert").dialog({
+                                title: "Success", resizable: false, width: "27em",
+                                position: { my: "center", at: "center", of: "svg" },
+                                buttons: {
+                                    Close: function () { $(this).dialog("close"); showCloudMenu(); }
+                                }
+                            });
+                        }
+                    }).catch(function (err) { console.log(err); console.timeEnd("saveToCloud"); });
+                });
             }
         });
     }
@@ -410,18 +411,18 @@ function renameCloudMap(cloudMap, newFilename) {
     });
 
     fetch(mapLink, { method: "PUT", headers, body: JSON.stringify(updatedCloudMap), mode: "cors", credentials: "include" })
-        .then(function (response) {
-            if (response.status !== 201) {
-                response.json().then(function (data) {
-                    tip(`${data.message}`, false, "error");
-                    return;
-                });
-            } else {
-                if (cloudMap.fileId === cloudSession.getCurrentSeed()) cloudSession.setNewFilename(newFilename);
-                $("#alert").dialog("close");
-                showCloudMenu();
-            }
-        });
+    .then(function (response) {
+        if (response.status !== 201) {
+            response.json().then(function (data) {
+                tip(`${data.message}`, false, "error");
+                return;
+            });
+        } else {
+            if (cloudMap.fileId === cloudSession.getCurrentSeed()) cloudSession.setNewFilename(newFilename);
+            $("#alert").dialog("close");
+            showCloudMenu();
+        }
+    });
 }
 
 // Show pane to insert a map's name for saving to cloud
@@ -471,30 +472,30 @@ function deleteCloudMap(cloudMap) {
         buttons: {
             Yes: function () {
                 fetch(deleteLink, { method: "DELETE", headers, mode: "cors", credentials: "include" })
-                    .then(function (response) {
-                        if (!response.ok) {
-                            response.json().then(function (data) {
-                                console.log(data.message);
-                                alertMessage.innerHTML = "Something get wrong while deleting a map. Please try again later!";
-                                $("#alert").dialog({
-                                    title: "Error", resizable: false, width: "27em",
-                                    position: { my: "center", at: "center", of: "svg" },
-                                    buttons: {
-                                        Close: function () { $(this).dialog("close"); }
-                                    }
-                                });
-                            });
-                        } else {
-                            alertMessage.innerHTML = `${cloudMap.filename} deleted from the cloud successfully`;
+                .then(function (response) {
+                    if (!response.ok) {
+                        response.json().then(function (data) {
+                            console.log(data.message);
+                            alertMessage.innerHTML = "Something went wrong while deleting a map. Please try again later";
                             $("#alert").dialog({
-                                title: "Success", resizable: false, width: "27em",
+                                title: "Error", resizable: false, width: "27em",
                                 position: { my: "center", at: "center", of: "svg" },
                                 buttons: {
-                                    Ok: function () { $(this).dialog("close"); showCloudMenu(); }
+                                    Close: function () { $(this).dialog("close"); }
                                 }
                             });
-                        }
-                    });
+                        });
+                    } else {
+                        alertMessage.innerHTML = `${cloudMap.filename} deleted from the cloud successfully`;
+                        $("#alert").dialog({
+                            title: "Success", resizable: false, width: "27em",
+                            position: { my: "center", at: "center", of: "svg" },
+                            buttons: {
+                                Ok: function () { $(this).dialog("close"); showCloudMenu(); }
+                            }
+                        });
+                    }
+                });
             },
             No: function () { $(this).dialog("close"); }
         }
@@ -506,24 +507,23 @@ function logout() {
     const headers = new Headers({ "X-XSRF-TOKEN": cloudSession.getCsrfToken() });
     if (JSON.parse(localStorage.getItem("fmgUser")) !== null) localStorage.removeItem("fmgUser");
     fetch(CLOUD_BASE + "/logout", { method: "POST", headers, mode: "cors", credentials: "include" })
-        .then(function (response) {
-            if (response.ok || response.status === 401) {
-                $("#cloudMenu").dialog("close");
-            } else {
-                response.json().then(function (data) {
-                    console.log(data.message);
-                    alertMessage.innerHTML = "Something went wrong while logout. Please try again later!";
-                    $("#alert").dialog({
-                        title: "Error", resizable: false, width: "27em",
-                        position: { my: "center", at: "center", of: "svg" },
-                        buttons: {
-                            Close: function () { $(this).dialog("close"); }
-                        }
-                    });
+    .then(function (response) {
+        if (response.ok || response.status === 401) {
+            $("#cloudMenu").dialog("close");
+        } else {
+            response.json().then(function (data) {
+                console.log(data.message);
+                alertMessage.innerHTML = "Something went wrong while logout. Please try again later!";
+                $("#alert").dialog({
+                    title: "Error", resizable: false, width: "27em",
+                    position: { my: "center", at: "center", of: "svg" },
+                    buttons: {
+                        Close: function () { $(this).dialog("close"); }
+                    }
                 });
-            }
-        })
-        .catch(function (err) { console.log(err); });
+            });
+        }
+    }).catch(function (err) { console.log(err); });
 }
 
 // Count "Save .map locally" click
